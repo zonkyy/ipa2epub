@@ -15,9 +15,9 @@ require 'find'
 require 'readline'
 
 class Ipa2Epub
-  def self.extract(zip)
+  def self.create_epub(ipa)
     # 作成予定ファイルが既に存在していないかチェック
-    output_path = Pathname(zip).sub_ext(".epub")
+    output_path = Pathname(ipa).sub_ext(".epub")
     if File.exist?(output_path)
       while buf = Readline.readline("Overwrite #{output_path}? (y/n): ")
         if (buf == "y")
@@ -30,8 +30,8 @@ class Ipa2Epub
     end
 
     Dir.mktmpdir {|tmpdir|
-      # zipをtmpdir下に解凍
-      Zip::Archive.open(zip) {|archives|
+      # ipaをtmpdir下に解凍
+      Zip::Archive.open(ipa) {|archives|
         archives.each do |a|
           d = File.dirname(a.name)
           FileUtils.mkdir_p("#{tmpdir}/#{d}")
@@ -42,7 +42,7 @@ class Ipa2Epub
       }
 
       # epubに必要なファイルをepubに追加
-      puts "create #{output_path.realpath.to_s} "
+      puts "#{ipa} -> #{output_path.to_s} "
       Zip::Archive.open(output_path.to_s, Zip::CREATE | Zip::TRUNC) {|output|
         book_path = Pathname(Dir.glob("#{tmpdir}/Payload/*.app/book")[0])
         Find.find(book_path) do |f|
@@ -61,8 +61,8 @@ end
 
 
 if __FILE__ == $0
-  ARGV.each do |zip|
-    Ipa2Epub.extract(zip)
+  ARGV.each do |ipa|
+    Ipa2Epub.create_epub(ipa)
   end
   puts "complete."
 end
